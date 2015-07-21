@@ -22,28 +22,26 @@
         return nil;
     }
     
-    UIImage *image;
-    NSString *imageContentType = [NSData sd_contentTypeForImageData:data];
-    if ([imageContentType isEqualToString:@"image/gif"]) {
-        image = [UIImage sd_animatedGIFWithData:data];
-    }
-#ifdef SD_WEBP
-    else if ([imageContentType isEqualToString:@"image/webp"])
-    {
-        image = [UIImage sd_imageWithWebPData:data];
+#ifdef SD_ANIMATED_GIF
+    if ([[NSData sd_contentTypeForImageData:data] isEqualToString:@"image/gif"]) {
+        return [UIImage sd_animatedGIFWithData:data];
     }
 #endif
-    else {
-        image = [[UIImage alloc] initWithData:data];
-        UIImageOrientation orientation = [self sd_imageOrientationFromImageData:data];
-        if (orientation != UIImageOrientationUp) {
-            image = [UIImage imageWithCGImage:image.CGImage
-                                        scale:image.scale
-                                  orientation:orientation];
-        }
+    
+#ifdef SD_WEBP
+    if ([[NSData sd_contentTypeForImageData:data] isEqualToString:@"image/webp"])
+    {
+        return [UIImage sd_imageWithWebPData:data];
     }
-
-
+#endif
+    
+    UIImage *image = [[UIImage alloc] initWithData:data];
+    UIImageOrientation orientation = [self sd_imageOrientationFromImageData:data];
+    if (orientation != UIImageOrientationUp) {
+        image = [UIImage imageWithCGImage:image.CGImage
+                                    scale:image.scale
+                              orientation:orientation];
+    }
     return image;
 }
 
