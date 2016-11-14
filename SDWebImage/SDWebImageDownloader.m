@@ -300,7 +300,34 @@ didReceiveResponse:(NSURLResponse *)response
 }
 
 - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task willPerformHTTPRedirection:(NSHTTPURLResponse *)response newRequest:(NSURLRequest *)request completionHandler:(void (^)(NSURLRequest * _Nullable))completionHandler {
-    
+    if (task.currentRequest.URL != nil && request.URL != nil && response.statusCode == 302) {
+        if ([task.currentRequest.URL.host isEqualToString:@"i.imgur.com"] && [request.URL.host isEqualToString:@"imgur.com"]) {
+            NSURL *url = task.currentRequest.URL;
+            NSString *pathExtension = url.pathExtension;
+            
+            NSString *pathWithoutExtension = pathExtension.length > 0 ? [url.path stringByReplacingOccurrencesOfString:[NSString stringWithFormat:@".%@", pathExtension] withString:@""] : url.path;
+            //Imgur will always respond with a valid image if the extension is PNG
+            if ([pathExtension isEqualToString:@"mp4"]) {
+                pathExtension = @"png";
+            }
+            if ([pathExtension isEqualToString:@"gifv"]) {
+                pathExtension = @"png";
+            }
+            if (pathExtension.length <= 0) {
+                pathExtension = @"png";
+            }
+            
+            NSString *pathWithoutSize = @"";
+            if (pathWithoutExtension.length > 1) {
+                pathWithoutSize = [pathWithoutExtension substringToIndex:pathWithoutExtension.length-2];
+            }
+            
+            NSMutableURLRequest *mutableRequest = (NSMutableURLRequest *)[request mutableCopy];
+            mutableRequest.URL = [NSURL URLWithString:[NSString stringWithFormat:@"https://i.imgur.com%@.%@",pathWithoutSize,pathExtension]];
+            completionHandler(mutableRequest);
+            return;
+        }
+    }
     completionHandler(request);
 }
 
