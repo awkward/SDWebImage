@@ -24,11 +24,13 @@
     
     UIImage *image;
     SDImageFormat imageFormat = [NSData sd_imageFormatForImageData:data];
+#ifdef SD_ANIMATED_GIF
     if (imageFormat == SDImageFormatGIF) {
         image = [UIImage sd_animatedGIFWithData:data];
     }
+#endif
 #ifdef SD_WEBP
-    else if (imageFormat == SDImageFormatWebP)
+    if (imageFormat == SDImageFormatWebP)
     {
         image = [UIImage sd_imageWithWebPData:data];
     }
