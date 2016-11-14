@@ -1,10 +1,10 @@
-//
-//  UIImage+MultiFormat.m
-//  SDWebImage
-//
-//  Created by Olivier Poitrey on 07/06/13.
-//  Copyright (c) 2013 Dailymotion. All rights reserved.
-//
+/*
+ * This file is part of the SDWebImage package.
+ * (c) Olivier Poitrey <rs@dailymotion.com>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
 
 #import "UIImage+MultiFormat.h"
 #import "UIImage+GIF.h"
@@ -17,36 +17,40 @@
 
 @implementation UIImage (MultiFormat)
 
-+ (UIImage *)sd_imageWithData:(NSData *)data {
++ (nullable UIImage *)sd_imageWithData:(nullable NSData *)data {
     if (!data) {
         return nil;
     }
     
-#ifdef SD_ANIMATED_GIF
-    if ([[NSData sd_contentTypeForImageData:data] isEqualToString:@"image/gif"]) {
-        return [UIImage sd_animatedGIFWithData:data];
+    UIImage *image;
+    SDImageFormat imageFormat = [NSData sd_imageFormatForImageData:data];
+    if (imageFormat == SDImageFormatGIF) {
+        image = [UIImage sd_animatedGIFWithData:data];
     }
-#endif
-    
 #ifdef SD_WEBP
-    if ([[NSData sd_contentTypeForImageData:data] isEqualToString:@"image/webp"])
+    else if (imageFormat == SDImageFormatWebP)
     {
-        return [UIImage sd_imageWithWebPData:data];
+        image = [UIImage sd_imageWithWebPData:data];
     }
 #endif
-    
-    UIImage *image = [[UIImage alloc] initWithData:data];
-    UIImageOrientation orientation = [self sd_imageOrientationFromImageData:data];
-    if (orientation != UIImageOrientationUp) {
-        image = [UIImage imageWithCGImage:image.CGImage
-                                    scale:image.scale
-                              orientation:orientation];
+    else {
+        image = [[UIImage alloc] initWithData:data];
+#if SD_UIKIT || SD_WATCH
+        UIImageOrientation orientation = [self sd_imageOrientationFromImageData:data];
+        if (orientation != UIImageOrientationUp) {
+            image = [UIImage imageWithCGImage:image.CGImage
+                                        scale:image.scale
+                                  orientation:orientation];
+        }
+#endif
     }
+
+
     return image;
 }
 
-
-+(UIImageOrientation)sd_imageOrientationFromImageData:(NSData *)imageData {
+#if SD_UIKIT || SD_WATCH
++(UIImageOrientation)sd_imageOrientationFromImageData:(nonnull NSData *)imageData {
     UIImageOrientation result = UIImageOrientationUp;
     CGImageSourceRef imageSource = CGImageSourceCreateWithData((__bridge CFDataRef)imageData, NULL);
     if (imageSource) {
@@ -110,7 +114,48 @@
     }
     return orientation;
 }
+#endif
 
+- (nullable NSData *)sd_imageData {
+    return [self sd_imageDataAsFormat:SDImageFormatUndefined];
+}
+
+- (nullable NSData *)sd_imageDataAsFormat:(SDImageFormat)imageFormat {
+    NSData *imageData = nil;
+    if (self) {
+#if SD_UIKIT || SD_WATCH
+        int alphaInfo = CGImageGetAlphaInfo(self.CGImage);
+        BOOL hasAlpha = !(alphaInfo == kCGImageAlphaNone ||
+                          alphaInfo == kCGImageAlphaNoneSkipFirst ||
+                          alphaInfo == kCGImageAlphaNoneSkipLast);
+        
+        BOOL usePNG = hasAlpha;
+        
+        // the imageFormat param has priority here. But if the format is undefined, we relly on the alpha channel
+        if (imageFormat != SDImageFormatUndefined) {
+            usePNG = (imageFormat == SDImageFormatPNG);
+        }
+        
+        if (usePNG) {
+            imageData = UIImagePNGRepresentation(self);
+        } else {
+            imageData = UIImageJPEGRepresentation(self, (CGFloat)1.0);
+        }
+#else
+        NSBitmapImageFileType imageFileType = NSJPEGFileType;
+        if (imageFormat == SDImageFormatGIF) {
+            imageFileType = NSGIFFileType;
+        } else if (imageFormat == SDImageFormatPNG) {
+            imageFileType = NSPNGFileType;
+        }
+        
+        imageData = [NSBitmapImageRep representationOfImageRepsInArray:self.representations
+                                                             usingType:imageFileType
+                                                            properties:@{}];
+#endif
+    }
+    return imageData;
+}
 
 
 @end
