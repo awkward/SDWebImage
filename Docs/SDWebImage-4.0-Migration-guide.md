@@ -14,7 +14,7 @@ This guide is provided in order to ease the transition of existing applications 
 SDWebImage 4.0 officially supports iOS 7 and later, Mac OS X 10.8 and later, watchOS 2 and later and tvOS 9 and later.
 It needs Xcode 7.3 or later to be able to build everything properly.
 
-For targeting previous versions of the SDKs, check [README - Backwards compatibility](https://github.com/rs/SDWebImage#backwards-compatibility)
+For targeting previous versions of the SDKs, check [README - Backwards compatibility](https://github.com/SDWebImage/SDWebImage#backwards-compatibility)
 .
 
 ### Migration
@@ -27,16 +27,28 @@ With 4.0, the ones marked as `nullable` will be regular optionals, as the `nonnu
 
 For details, read [Nullability and Objective-C](https://developer.apple.com/swift/blog/?id=25).
 
-#### Simple case
+#### Using the UI*View categories brings no change
 
 SDWebImage 3.x
 ```
-[imageView sd_setImageWithURL:url];
+[imageView sd_setImageWithURL:url placeholderImage:placeholderImage];
 ```
 
 SDWebImage 4.x
 ```
-[imageView sd_setImageWithURL:url];
+[imageView sd_setImageWithURL:url placeholderImage:placeholderImage];
+```
+
+#### Using directly SDWebImageManager
+
+SDWebImage 3.x
+```
+[manager downloadImageWithURL:url options:options: progress:nil completed:^(UIImage *image, NSError *error, SDImageCacheType cacheType, BOOL finished, NSURL *imageURL) { ... } ];
+```
+
+SDWebImage 4.x
+```
+[manager loadImageWithURL:url options:options: progress:nil completed:^(UIImage *image, NSData *imageData, NSError *error, SDImageCacheType cacheType, BOOL finished, NSURL *imageURL) { ... } ];
 ```
 
 ### Entities
